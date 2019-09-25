@@ -8,6 +8,7 @@ from pathlib import Path
 import os
 import requests
 from bs4 import BeautifulSoup
+import json
 
 
 class GetURLsFromSitemap(object):
@@ -98,16 +99,19 @@ class GetURLFromEachPage(object):
                             child_links = (*child_links, link)
 
                 # print(child_links)
-                url_dict.update({child_links:parse_url})
-                print(url_dict)
+                # Wash the data to convert any key that is not a string into a string
+                # The keys are child links and the values are root links
+                url_dict.update({str(child_links):parse_url})
+                # print(url_dict)
 
             except urllib.request.URLError as e:
                 print(e)
-                empty_link = ()
-                url_dict.update(broken_link=parse_url)
+                empty_link = ("broken link")
+                url_dict.update({str(empty_link):parse_url})
+
 
         with open(full_report_name, "w+", encoding="utf-8") as f:
-            f.write(url_dict)
+            json.dump(url_dict,f)
             # for link in links:
                 # f.write(link + "\n")
                 # writelines() is also stupid because it does not add new line characters
@@ -119,60 +123,74 @@ class CheckLinkStatus(object):
 
     def check_link_status(self, file_name):
 
-        report_name="link_report.txt"
+        report_name="link_validation_report.html"
+
+        html_code = """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Report</title></head><body><h1>Link Validation Report</h1>"""
 
         with open(file_name,"r",encoding="utf-8") as f:
+            json_text = f.read()
 
-            # Need to parse the JSON file and check link status
+        link_dict = json.loads(json_text)
 
-            # links = f.read().splitlines()
-            # Abandoned this: links = f.readlines()
-            # readlines() is stupid because newline character is added to each element. This
-            # will lead to errors in later functions that use the URL. %0A is the URL encoding
-            # of a newline
 
+        # If the report file exists, remove the file.
         text_file = Path(report_name)
         if text_file.is_file():
             os.remove(report_name)
 
-        for link in links:
-                try:
-                    # print(link)
-                    # print(type(link))
-                    r = requests.get(link)
-                    # header_info = r.raise_for_status()
-                    status_code = r.status_code
 
-                    """
-                    
-                    Informational responses (100–199),
-                    Successful responses (200–299),
-                    Redirects (300–399),
-                    Client errors (400–499),
-                    and Server errors (500–599).
-                    
-                    """
+        for key in link_dict.keys():
 
-                    # Consider putting this info in a database or other formats
-                    with open(report_name,'a', encoding="utf-8") as f:
+            key = eval(key)
+            print(type(key))
+            print(key)
+            head_code = ""
+            table_code = ""
 
-                        if status_code is 200:
-                            f.write("PASS " + "Status code: " + str(status_code) + " " + str(link) + " has no errors." + "\n")
-                        elif status_code in range(300,399):
-                            f.write("FAIL " + "Status code: " + str(status_code) + " " + str(link) + " has a redirect." + "\n")
-                        elif status_code in range(400,599):
-                            f.write("FAIL " + "Status code: " + str(status_code) + " " + str(link) + " has errors." + "\n")
+            try:
+                if str(key) is not "broken link":
+                    for link in key:
+                        link_response = requests.get(link)
+                        status_code = link_response.status_code
+                        table_code.join("""<tr><td>""" + link + """"</td><td>""" + str(status_code) + """"</td></tr>""")
+
+                        # print("-- Link: " + link + "Status code: " + str(status_code))
+                    key_response = requests.get(link_dict[key])
+                    # status_code_root = key_response.status_code
+                    # print("From " + link_dict[key] + "Status code: " + str(status_code_root))
+                    head_code.join("""<p>""" + link_dict[key] + """ contains the following links:</p><table><tr><th>Link</th><th>Status</th></tr>""")
+
+                    head_code.join(table_code.join("""</table>"""))
+
+                else:
+                    broken_response = requests.get(link_dict[key])
+                    status_code_broken = broken_response.status_code
+                    # print("This root link " + link_dict[key] + "is broken" + "Status code: " + str(status_code_broken))
+                    head_code.join("""<p>""" + link_dict[key] + """is broken</p>""")
+
+                """
+                
+                Informational responses (100–199),
+                Successful responses (200–299),
+                Redirects (300–399),
+                Client errors (400–499),
+                and Server errors (500–599).
+                
+                """
 
 
-                except requests.ConnectionError:
-                    print("Failed to connect.")
+            except requests.ConnectionError:
+                print("Failed to connect.")
+
+            with open(report_name, "w+", "utf-8") as f:
+                f.write(head_code)
 
 
 # Get sitemap
 SitemapURLMilvus = GetURLsFromSitemap("https://milvus.io/sitemap.xml")
 SitemapURLMilvus.get_url_list("https://milvus.io/sitemap.xml")
 
-# Extract URLs from pages in the sitemap
+# Extract URLs from pages in the sitemap and generate a JSON file to store link info
 GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
 GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 
@@ -180,4 +198,3 @@ GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 # Validate all links
 CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
 CheckLinkStatusMilvus.check_link_status("full_link_report.json")
-
