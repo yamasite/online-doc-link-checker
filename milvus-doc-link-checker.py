@@ -139,8 +139,7 @@ class CheckLinkStatus(object):
 
 
         for key in link_dict.keys():
-            
-            # Get an iterable key
+
             new_key = eval(key)
             print(type(key))
             print(key)
@@ -183,8 +182,8 @@ class CheckLinkStatus(object):
             except requests.ConnectionError:
                 print("Failed to connect.")
 
-            with open(report_name, "w+", "utf-8") as f:
-                f.write(head_code)
+        with open(report_name, "w+", encoding="utf-8") as f:
+            f.write(html_code.join(head_code))
 
 
 # Get sitemap
@@ -199,4 +198,3 @@ class CheckLinkStatus(object):
 # Validate all links
 CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
 CheckLinkStatusMilvus.check_link_status("full_link_report.json")
-
