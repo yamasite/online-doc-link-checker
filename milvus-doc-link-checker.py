@@ -132,7 +132,6 @@ class CheckLinkStatus(object):
 
         link_dict = json.loads(json_text)
 
-
         # If the report file exists, remove the file.
         text_file = Path(report_name)
         if text_file.is_file():
@@ -140,19 +139,21 @@ class CheckLinkStatus(object):
 
 
         for key in link_dict.keys():
-
-            key = eval(key)
+            
+            # Get an iterable key
+            new_key = eval(key)
             print(type(key))
             print(key)
             head_code = ""
             table_code = ""
 
             try:
-                if str(key) is not "broken link":
-                    for link in key:
+                if str(new_key) is not "broken link":
+                    key_response = requests.get(link_dict[key])
+                    for link in new_key:
                         link_response = requests.get(link)
                         status_code = link_response.status_code
-                        table_code.join("""<tr><td>""" + link + """"</td><td>""" + str(status_code) + """"</td></tr>""")
+                        table_code.join("""<tr><td>""" + link + """</td><td>""" + str(status_code) + """</td></tr>""")
 
                         # print("-- Link: " + link + "Status code: " + str(status_code))
                     key_response = requests.get(link_dict[key])
@@ -187,14 +188,15 @@ class CheckLinkStatus(object):
 
 
 # Get sitemap
-SitemapURLMilvus = GetURLsFromSitemap("https://milvus.io/sitemap.xml")
-SitemapURLMilvus.get_url_list("https://milvus.io/sitemap.xml")
+# SitemapURLMilvus = GetURLsFromSitemap("https://milvus.io/sitemap.xml")
+# SitemapURLMilvus.get_url_list("https://milvus.io/sitemap.xml")
 
 # Extract URLs from pages in the sitemap and generate a JSON file to store link info
-GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
-GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
+# GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
+# GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 
 
 # Validate all links
 CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
 CheckLinkStatusMilvus.check_link_status("full_link_report.json")
+
