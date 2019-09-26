@@ -81,6 +81,8 @@ class GetURLFromEachPage(object):
 
         full_report_name = "full_link_report.json"
 
+        milvus_home = "https://www.milvus.io/"
+
         with open(sitemap_link_file, "r", encoding="utf-8") as f:
             parse_url_list = f.read().splitlines()
 
@@ -101,7 +103,7 @@ class GetURLFromEachPage(object):
                         # Relative URLs
                         elif link.startswith("/"):
                             # parse_url does not end with "/"
-                            child_links= (*child_links,str(parse_url + link))
+                            child_links= (*child_links,str(milvus_home + link))
                         # mailto:, ftp://, telnet, etc. are off the table because this is a doc checker
                 # print(child_links)
                 # Wash the data to convert any key that is not a string into a string
@@ -214,5 +216,6 @@ GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 
 
 # Validate all links
-# CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
-# CheckLinkStatusMilvus.check_link_status("full_link_report.json")
+CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
+CheckLinkStatusMilvus.check_link_status("full_link_report.json")
+
