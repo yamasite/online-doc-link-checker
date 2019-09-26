@@ -81,7 +81,7 @@ class GetURLFromEachPage(object):
 
         full_report_name = "full_link_report.json"
 
-        milvus_home = "https://www.milvus.io/"
+        milvus_home = "https://www.milvus.io"
 
         with open(sitemap_link_file, "r", encoding="utf-8") as f:
             parse_url_list = f.read().splitlines()
