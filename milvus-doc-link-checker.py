@@ -91,13 +91,18 @@ class GetURLFromEachPage(object):
                 html_code = response.read()
                 soup = BeautifulSoup(html_code.decode("utf-8"), "lxml")
                 a_links = soup.find_all("a")
+                # print(a_links)
                 for a_link in a_links:
                     link = a_link.get("href")
                     if type(link) is str:
-
+                        # Absolute URLs
                         if link.startswith("http://") or link.startswith("https://"):
                             child_links = (*child_links, link)
-
+                        # Relative URLs
+                        elif link.startswith("/"):
+                            # parse_url does not end with "/"
+                            child_links= (*child_links,str(parse_url + link))
+                        # mailto:, ftp://, telnet, etc. are off the table because this is a doc checker
                 # print(child_links)
                 # Wash the data to convert any key that is not a string into a string
                 # The keys are child links and the values are root links
@@ -106,7 +111,8 @@ class GetURLFromEachPage(object):
 
             except urllib.request.URLError as e:
                 print(e)
-                empty_link = ("broken link")
+                # tuples in python are defined by the existence of commas, not brackets
+                empty_link = ("broken link",)
                 url_dict.update({str(empty_link):parse_url})
 
 
@@ -127,6 +133,9 @@ class CheckLinkStatus(object):
 
         html_code = """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Report</title></head><body><h1>Link Validation Report</h1>"""
 
+        with open(report_name, "w+", encoding="utf-8") as f:
+            f.write(html_code)
+
         with open(file_name,"r",encoding="utf-8") as f:
             json_text = f.read()
 
@@ -140,33 +149,42 @@ class CheckLinkStatus(object):
 
         for key in link_dict.keys():
 
-            new_key = eval(key)
-            print(type(key))
-            print(key)
             head_code = ""
             table_code = ""
 
+            new_key = eval(key)
+            print(type(key))
+            print(key)
+
             try:
-                if str(new_key) is not "broken link":
-                    key_response = requests.get(link_dict[key])
-                    for link in new_key:
-                        link_response = requests.get(link)
+                if key != """('broken link',)""":
+                    print(key)
+
+                    head_code = """<p>""" + link_dict[
+                        key] + """ contains the following links:</p><table><tr><th>Link</th><th>Status</th></tr>"""
+
+                    with open(report_name, "a", encoding="utf-8") as f:
+                        f.write(head_code)
+
+                    # Use set to remove duplicate links. This can significantly reduce execution time
+                    for link in set(new_key):
+                        link_response = requests.get(link, timeout=10)
                         status_code = link_response.status_code
-                        table_code.join("""<tr><td>""" + link + """</td><td>""" + str(status_code) + """</td></tr>""")
+                        row_code = """<tr><td>""" + link + """</td><td>""" + str(status_code) + """</td></tr>"""
 
-                        # print("-- Link: " + link + "Status code: " + str(status_code))
-                    key_response = requests.get(link_dict[key])
-                    # status_code_root = key_response.status_code
-                    # print("From " + link_dict[key] + "Status code: " + str(status_code_root))
-                    head_code.join("""<p>""" + link_dict[key] + """ contains the following links:</p><table><tr><th>Link</th><th>Status</th></tr>""")
+                        with open(report_name, "a", encoding="utf-8") as f:
+                            f.write(row_code)
 
-                    head_code.join(table_code.join("""</table>"""))
+                        print("""Checked link for """ + link)
+
+                    with open(report_name, "a", encoding="utf-8") as f:
+                        f.write("</table>")
 
                 else:
-                    broken_response = requests.get(link_dict[key])
-                    status_code_broken = broken_response.status_code
-                    # print("This root link " + link_dict[key] + "is broken" + "Status code: " + str(status_code_broken))
-                    head_code.join("""<p>""" + link_dict[key] + """is broken</p>""")
+                    head_code = """<p>""" + link_dict[key] + """ is broken</p>"""
+                    with open(report_name, "a", encoding="utf-8") as f:
+                        f.write(head_code)
+                    # print(head_code)
 
                 """
                 
@@ -179,11 +197,11 @@ class CheckLinkStatus(object):
                 """
 
 
-            except requests.ConnectionError:
-                print("Failed to connect.")
+            except requests.exceptions.Timeout as timeout_error:
+                print(timeout_error)
 
-        with open(report_name, "w+", encoding="utf-8") as f:
-            f.write(html_code.join(head_code))
+        with open(report_name, "a", encoding="utf-8") as f:
+            f.write("""</body></html>""")
 
 
 # Get sitemap
@@ -191,10 +209,10 @@ class CheckLinkStatus(object):
 # SitemapURLMilvus.get_url_list("https://milvus.io/sitemap.xml")
 
 # Extract URLs from pages in the sitemap and generate a JSON file to store link info
-# GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
-# GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
+GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
+GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 
 
 # Validate all links
-CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
-CheckLinkStatusMilvus.check_link_status("full_link_report.json")
+# CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
+# CheckLinkStatusMilvus.check_link_status("full_link_report.json")
