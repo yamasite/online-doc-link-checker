@@ -1,5 +1,5 @@
 # encoding utf-8
-# using Python 3.5.1
+# using Python 3.5.x
 # Crawls all doc pages from the sitemap and check if all links are valid
 
 import urllib.request
@@ -9,8 +9,6 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import json
-
-
 class GetURLsFromSitemap(object):
 
 
@@ -104,7 +102,7 @@ class GetURLFromEachPage(object):
                         elif link.startswith("/"):
                             # parse_url does not end with "/"
                             child_links= (*child_links,str(milvus_home + link))
-                        # mailto:, ftp://, telnet, etc. are off the table because this is a doc checker
+                        # We only check http/https here https://tools.ietf.org/html/rfc1738
                 # print(child_links)
                 # Wash the data to convert any key that is not a string into a string
                 # The keys are child links and the values are root links
@@ -132,11 +130,9 @@ class CheckLinkStatus(object):
     def check_link_status(self, file_name):
 
         report_name="link_validation_report.html"
+        summary_name = "link_validation_summary.html"
 
-        html_code = """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Report</title></head><body><h1>Link Validation Report</h1>"""
-
-        with open(report_name, "w+", encoding="utf-8") as f:
-            f.write(html_code)
+        html_code = """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Detailed Report</title></head><body><h1>Link Validation Detailed Report</h1>"""
 
         with open(file_name,"r",encoding="utf-8") as f:
             json_text = f.read()
@@ -148,11 +144,16 @@ class CheckLinkStatus(object):
         if text_file.is_file():
             os.remove(report_name)
 
+        with open(report_name, "w+", encoding="utf-8") as f:
+            f.write(html_code)
+
 
         for key in link_dict.keys():
 
             head_code = ""
             table_code = ""
+
+
 
             new_key = eval(key)
             print(type(key))
@@ -162,17 +163,31 @@ class CheckLinkStatus(object):
                 if key != """('broken link',)""":
                     print(key)
 
-                    head_code = """<p>""" + link_dict[
-                        key] + """ contains the following links:</p><table><tr><th>Link</th><th>Status</th></tr>"""
+                    head_code = """<table border="1"><tr><th>Link</th><th>Status</th><th>Parent Page</th></tr>"""
 
                     with open(report_name, "a", encoding="utf-8") as f:
+                        f.write("""<h2>Child links for <a href=\"""" + link_dict[key] + """\">""" + link_dict[key] +"""</a>""" + """</td></tr></h2>""")
                         f.write(head_code)
 
                     # Use set to remove duplicate links. This can significantly reduce execution time
                     for link in set(new_key):
                         link_response = requests.get(link, timeout=10)
                         status_code = link_response.status_code
-                        row_code = """<tr><td>""" + link + """</td><td>""" + str(status_code) + """</td></tr>"""
+                        """
+
+                            Informational responses (100–199),
+                            Successful responses (200–299),
+                            Redirects (300–399),
+                            Client errors (400–499),
+                            and Server errors (500–599).
+
+                        """
+
+                        if status_code in range(200,299):
+                            row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + """<a href=\"""" + link + """\">""" + link +"""</a>""" + """</td><td>""" + str(status_code) + """</td><td>""" +  """<a href=\"""" + link_dict[key] + """\">""" + link_dict[key] +"""</a>""" + """</td></tr>"""
+
+                        elif status_code in range(400,599):
+                            row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link +"""</a>""" + """</td><td>""" + str(status_code) + """</td><td>""" +  """<a href=\"""" + link_dict[key] + """\">""" + link_dict[key] +"""</a>""" + """</td></tr>"""
 
                         with open(report_name, "a", encoding="utf-8") as f:
                             f.write(row_code)
@@ -183,20 +198,10 @@ class CheckLinkStatus(object):
                         f.write("</table>")
 
                 else:
-                    head_code = """<p>""" + link_dict[key] + """ is broken</p>"""
+                    head_code = """<p class="fail">""" + """<a href=\"""" + link_dict[key] + """\">""" + link_dict[key] +"""</a>""" + """ is broken</p>"""
                     with open(report_name, "a", encoding="utf-8") as f:
                         f.write(head_code)
                     # print(head_code)
-
-                """
-                
-                Informational responses (100–199),
-                Successful responses (200–299),
-                Redirects (300–399),
-                Client errors (400–499),
-                and Server errors (500–599).
-                
-                """
 
 
             except requests.exceptions.Timeout as timeout_error:
@@ -205,14 +210,29 @@ class CheckLinkStatus(object):
         with open(report_name, "a", encoding="utf-8") as f:
             f.write("""</body></html>""")
 
+        # Use BeautifulSoup to read this report and return statistics
+        with open(report_name, "r", encoding="utf-8") as f:
+            html_code = f.read()
+            soup = BeautifulSoup(html_code, "lxml")
+            failed_links = soup.find_all("tr",{"class":"fail"})
+            # Write report summary to another HTML file
+            with open(summary_name,"w+", encoding="utf-8") as f:
+                f.write("""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Report Summary</title></head><body><h1>Link Validation Report Summary</h1>""")
+                f.write("""<table><tr><th>Failed Links</th><th>Status Code</th><th>Parent Page</th></tr>""")
+                for failed_link in set(failed_links):
+                    f.write(failed_link)
+                f.write("""</table><p>"""+ """Refer to <a href=\"""" + report_name + """\">this link</a> for detailed report."""  + """</p></body></html>""")
+
+
+
 
 # Get sitemap
-# SitemapURLMilvus = GetURLsFromSitemap("https://milvus.io/sitemap.xml")
+# itemapURLMilvus = GetURLsFromSitemap("https://milvus.io/sitemap.xml")
 # SitemapURLMilvus.get_url_list("https://milvus.io/sitemap.xml")
 
 # Extract URLs from pages in the sitemap and generate a JSON file to store link info
-GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
-GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
+# GetURLFromEachPageMilvus = GetURLFromEachPage("outputlinks.txt")
+# GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 
 
 # Validate all links
