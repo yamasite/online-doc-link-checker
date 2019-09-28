@@ -103,7 +103,7 @@ class GetURLFromEachPage(object):
                             # parse_url does not end with "/"
                             child_links= (*child_links,str(milvus_home + link))
                         # Anchors
-                        elif link.startswith("#"):
+                        elif link.startswith("#") and link != "#":
                             child_links= (*child_links,str(parse_url + link))
                         # We only check http/https here https://tools.ietf.org/html/rfc1738
                 # print(child_links)
