@@ -186,6 +186,8 @@ class CheckLinkStatus(object):
                         elif status_code in range(400,599):
                             row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link +"""</a>""" + """</td><td>""" + str(status_code) + """</td><td>""" +  """<a href=\"""" + link_dict[key] + """\">""" + link_dict[key] +"""</a>""" + """</td></tr>"""
 
+                        # Use something link response.history to see if there are any redirects. Check the official documentation for the requests library for details.
+                        
                         with open(report_name, "a", encoding="utf-8") as f:
                             f.write(row_code)
                             print(row_code)
