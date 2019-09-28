@@ -102,6 +102,9 @@ class GetURLFromEachPage(object):
                         elif link.startswith("/"):
                             # parse_url does not end with "/"
                             child_links= (*child_links,str(milvus_home + link))
+                        # Anchors
+                        elif link.startswith("#"):
+                            child_links= (*child_links,str(parse_url + link))
                         # We only check http/https here https://tools.ietf.org/html/rfc1738
                 # print(child_links)
                 # Wash the data to convert any key that is not a string into a string
@@ -186,8 +189,6 @@ class CheckLinkStatus(object):
                         elif status_code in range(400,599):
                             row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link +"""</a>""" + """</td><td>""" + str(status_code) + """</td><td>""" +  """<a href=\"""" + link_dict[key] + """\">""" + link_dict[key] +"""</a>""" + """</td></tr>"""
 
-                        # Use something link response.history to see if there are any redirects. Check the official documentation for the requests library for details.
-                        
                         with open(report_name, "a", encoding="utf-8") as f:
                             f.write(row_code)
                             print(row_code)
@@ -248,4 +249,3 @@ GetURLFromEachPageMilvus.extract_url_from_html("outputlinks.txt")
 # Validate all links
 CheckLinkStatusMilvus = CheckLinkStatus("full_link_report.json")
 CheckLinkStatusMilvus.check_link_status("full_link_report.json")
-
