@@ -21,7 +21,7 @@ class LinksFromMarkdown(object):
 
     def extract_links_from_markdown(self, repository):
 
-        repository = "D:\\Users\王璐\\documents\\GitHub\\docs"
+        repository = "D:\\GithubRepo\\docs-master\\docs-master"
         link_file = "extracted_links.json"
 
         md_files = []
@@ -242,6 +242,73 @@ class CheckExtractedLinksFromMarkdown(object):
                     f.write("</table>")     
                     print("Complete link checking for " + key)
 
+class GenerateReportSummary(object):
+    def __init__(self, report_name):
+        self.report_name = report_name
+
+    def generate_report_summary(self, report_name):
+
+        summary_name = "link_validation_summary.html"
+
+        # Use BeautifulSoup to read this report and return statistics
+        with open(report_name, "r", encoding="utf-8") as f:
+            html_code = f.read()
+            soup = BeautifulSoup(html_code, "lxml")
+            failed_links_rows = soup.find_all("tr", {"class": "fail"})
+            for failed_links_row in failed_links_rows:
+                del failed_links_row.attrs["bgcolor"]
+            print(type(failed_links_rows))
+
+        # Write report summary to another HTML file
+        with open(summary_name, "w+", encoding="utf-8") as f:
+            f.write(
+                """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Report Summary</title></head><body><h1>Link Validation Report Summary</h1>""")
+            f.write("""<p>Click the button to sort the table by parent page:</p>
+    <p><button onclick="sortTable()">Sort</button></p>""")
+            f.write("""<script>
+    function sortTable() {
+      var table, rows, switching, i, x, y, shouldSwitch;
+      table = document.getElementById("myTable");
+      switching = true;
+      /*Make a loop that will continue until
+      no switching has been done:*/
+      while (switching) {
+        //start by saying: no switching is done:
+        switching = false;
+        rows = table.rows;
+        /*Loop through all table rows (except the
+        first, which contains table headers):*/
+        for (i = 1; i < (rows.length - 1); i++) {
+          //start by saying there should be no switching:
+          shouldSwitch = false;
+          /*Get the two elements you want to compare,
+          one from current row and one from the next:*/
+          x = rows[i].getElementsByTagName("TD")[0];
+          y = rows[i + 1].getElementsByTagName("TD")[0];
+          //check if the two rows should switch place:
+          if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+            //if so, mark as a switch and break the loop:
+            shouldSwitch = true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          /*If a switch has been marked, make the switch
+          and mark that a switch has been done:*/
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+        }
+      }
+    }
+    </script>""")
+            f.write(
+                """<table id="myTable" border="1"><tr><th>Failed Links</th><th>Status Code</th><th>Parent Page</th></tr>""")
+
+            for failed_link in set(failed_links_rows):
+                f.write(str(failed_link))
+            f.write(
+                """</table><p>""" + """Refer to <a href=\"""" + report_name + """\">this link</a> for detailed report.""" + """</p></body></html>""")
+
             
 # Get link JSON file
 LinksFromMarkdown_Milvus = LinksFromMarkdown("D:\GithubRepo\docs-master")
@@ -250,3 +317,7 @@ LinksFromMarkdown_Milvus.extract_links_from_markdown("D:\GithubRepo\docs-master"
 # Generate link validation report
 CheckExtractedLinksFromMarkdown_Milvus = CheckExtractedLinksFromMarkdown("extracted_links.json")
 CheckExtractedLinksFromMarkdown_Milvus.check_extracted_links("extracted_links.json")
+
+# Generate report summary
+GenerateReportSummary_Milvus = GenerateReportSummary("link_validation_report.html")
+GenerateReportSummary_Milvus.generate_report_summary("link_validation_report.html")
