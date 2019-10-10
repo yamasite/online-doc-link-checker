@@ -245,17 +245,17 @@ class CheckLinkStatus(object):
                                     status_code) + """</td><td>""" + """<a href=\"""" + link_dict[key] + """\">""" + \
                                            link_dict[key] + """</a>""" + """</td></tr>"""
 
-
-                            with open(report_name, "a", encoding="utf-8") as f:
-                                f.write(row_code)
-                                # print(row_code)
-
-                            print("""Checked link for """ + link)
-
+                            
                         else:
                             row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link + """</a>""" + """</td><td>""" + str(
                                 status_code) + """ '//' is always an error when checking remote URLs""" + """</td><td>""" + """<a href=\"""" + link_dict[key] + """\">""" + \
                                        link_dict[key] + """</a>""" + """</td></tr>"""
+                            
+                        with open(report_name, "a", encoding="utf-8") as f:
+                                f.write(row_code)
+                                # print(row_code)
+
+                            print("""Checked link for """ + link)
 
 
                     except requests.exceptions.Timeout as timeout_error:
