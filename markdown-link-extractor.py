@@ -13,7 +13,6 @@ from os.path import join, getsize
 from bs4 import BeautifulSoup
 import re
 
-
 class LinksFromMarkdown(object):
 
     def __init__(self, repository):
@@ -21,8 +20,17 @@ class LinksFromMarkdown(object):
 
     def extract_links_from_markdown(self, repository):
 
-        repository = "D:\\GithubRepo\\docs-master\\docs-master"
-        link_file = "extracted_links.json"
+        # repository = "D:\\GithubRepo\\docs-master\\docs-master"
+        link_file = "..\\reports\\" + "extracted_links.json"
+
+        dirName = "..\\reports"
+
+        try:
+            # Create target Directory
+            os.mkdir(dirName)
+            print("Directory ", dirName, " Created ")
+        except FileExistsError:
+            print("Directory ", dirName, " already exists")
 
         md_files = []
         pics = []
@@ -71,7 +79,7 @@ class CheckExtractedLinksFromMarkdown(object):
 
     def check_extracted_links(self, link_file):
 
-        report_name = "link_validation_report.html"
+        report_name = "..\\reports\\" + "link_validation_report.html"
         html_code = """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Detailed Report</title></head><body><h1>Link Validation Detailed Report</h1>"""
 
         with open(link_file, "r", encoding="utf-8") as f:
@@ -91,6 +99,9 @@ class CheckExtractedLinksFromMarkdown(object):
         # Iterate over all MD files
         # key ---> MD file location
         # value ---> An array of links in the MD file, including internet links and file links
+
+        invalid_counter = 0
+
         for key in link_dict.keys():
             head_code = ""
             table_code = ""
@@ -111,6 +122,19 @@ class CheckExtractedLinksFromMarkdown(object):
                 # Iterate over all links in each MD file
                 for link in link_dict.get(key):
                     # Check internet links: http,https
+
+                    try:
+                        assert type(link) is str
+
+                    except AssertionError as e:
+                        invalid_counter = invalid_counter + 1
+                        a_row_code = """<tr class="fail" bgcolor="#FF0000"><td>Invalid Link Number """ + str(invalid_counter)  +"""</td><td>""" + """This link is not string, which indicates that your MD file may not be well-formed.""" + """</td><td>""" + key + """</td></tr>"""
+                        with open(report_name, "a", encoding="utf-8") as f:
+                            f.write(a_row_code)
+                        continue
+
+                    # MD files that are not well-formed may raise exceptions. If parentheses are not correctly escaped, a NoneType object may be returned
+
                     if link.startswith("http://") or link.startswith("https://"):
                         try:
                             link_response = requests.get(link, timeout=60)
@@ -131,8 +155,12 @@ class CheckExtractedLinksFromMarkdown(object):
 
                                     try:
                                         # Acquire the url after "#"
-                                        response = urllib.request.urlopen(str(
-                                            urlparse(link).scheme + "://" + urlparse(link).netloc + urlparse(link).path),data=None)
+                                        headers = {
+                                            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
+
+                                        req = urllib.request.Request(url=str(
+                                            urlparse(link).scheme + "://" + urlparse(link).netloc + urlparse(link).path), headers=headers)
+                                        response = urllib.request.urlopen(req,data=None)
                                         html_code = response.read()
                                         soup = BeautifulSoup(html_code.decode("utf-8"), "lxml")
                                         a_hash = soup.find("a", {"id": str(urlparse(link).fragment)})
@@ -142,9 +170,10 @@ class CheckExtractedLinksFromMarkdown(object):
                                         h4_hash = soup.find("h4", {"id": str(urlparse(link).fragment)})
                                         h5_hash = soup.find("h5", {"id": str(urlparse(link).fragment)})
                                         h6_hash = soup.find("h6", {"id": str(urlparse(link).fragment)})
+                                        div_hash = soup.find("div",{"id": str(urlparse(link).fragment)})
 
-                                        if (None, None, None, None, None, None, None) != (
-                                        a_hash, h1_hash, h2_hash, h3_hash, h4_hash, h5_hash, h6_hash):
+                                        if (None, None, None, None, None, None, None, None) != (
+                                        a_hash, h1_hash, h2_hash, h3_hash, h4_hash, h5_hash, h6_hash, div_hash):
                                             row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + """<a href=\"""" + link + """\">""" + link + """</a>""" + """</td><td>""" + str(
                                                 status_code) + """</td><td>""" +  key + """</td></tr>"""
 
@@ -169,24 +198,21 @@ class CheckExtractedLinksFromMarkdown(object):
                             print(timeout_error)
                             row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link + """</a>""" + """</td><td>""" + str(
                                 timeout_error) + """</td><td>""" + key + """</td></tr>"""
-                            with open(report_name, "a", encoding="utf-8") as f:
-                                f.write(row_code)
+
 
 
                         except requests.exceptions.ConnectionError as connection_error:
                             print(connection_error)
                             row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link + """</a>""" + """</td><td>""" + str(
                                 connection_error) + """</td><td>""" + key + """</td></tr>"""
-                            with open(report_name, "a", encoding="utf-8") as f:
-                                f.write(row_code)
+
 
 
                         except requests.exceptions.HTTPError as http_error:
                             print(http_error)
                             row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + """<a href=\"""" + link + """\">""" + link + """</a>""" + """</td><td>""" + str(
                                 http_error) + """</td><td>""" + key + """</td></tr>"""
-                            with open(report_name, "a", encoding="utf-8") as f:
-                                f.write(row_code)
+
 
                     # elif link.startswith("mailto:"):
 
@@ -232,15 +258,30 @@ class CheckExtractedLinksFromMarkdown(object):
                             else:
                                 row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link  + """</td><td>The file link is broken.</td><td>""" + key + """</td></tr>"""
 
+                    elif link.startswith("#"):
+                        # Validate if anchors correctly show in the MD file
+                        with open(key,"r",encoding="utf-8") as f:
+                            md_text = f.read()
+                            # print(str(md_text))
+                            reg = re.compile(str("#" + "\s*" + link[1:]))
 
+                            if """<a name=\"""" + link[1:] + """\">""" in str(md_text) or len(re.findall(reg,str(md_text))) == 2:
+                                row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + link + """</td><td>The anchor link looks good.</td><td>""" + key + """</td></tr>"""
+                            else:
+                                row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link + """</td><td>The anchor link is broken.</td><td>""" + key + """</td></tr>"""
+                    # Writes row_code for the link to the table
                     with open(report_name, "a", encoding="utf-8") as f:
                         f.write(row_code)
                         # print(row_code)
-
-
+                # Writes the end of the table for the key
                 with open(report_name, "a", encoding="utf-8") as f:
                     f.write("</table>")     
-                    print("Complete link checking for " + key)
+                    print("Completed link checking for " + key)
+
+        with open(report_name, "a", encoding="utf-8") as f:
+            f.write("</body></html>")
+            print("Completed link checking for all markdown files")
+
 
 class GenerateReportSummary(object):
     def __init__(self, report_name):
@@ -248,7 +289,7 @@ class GenerateReportSummary(object):
 
     def generate_report_summary(self, report_name):
 
-        summary_name = "link_validation_summary.html"
+        summary_name = "..\\reports\\" + "link_validation_summary.html"
 
         # Use BeautifulSoup to read this report and return statistics
         with open(report_name, "r", encoding="utf-8") as f:
@@ -311,13 +352,13 @@ class GenerateReportSummary(object):
 
             
 # Get link JSON file
-LinksFromMarkdown_Milvus = LinksFromMarkdown("D:\GithubRepo\docs-master")
-LinksFromMarkdown_Milvus.extract_links_from_markdown("D:\GithubRepo\docs-master")
+LinksFromMarkdown_Milvus = LinksFromMarkdown("D:\\GithubRepo\\bootcamp")
+LinksFromMarkdown_Milvus.extract_links_from_markdown("D:\\GithubRepo\\bootcamp")
 
 # Generate link validation report
-CheckExtractedLinksFromMarkdown_Milvus = CheckExtractedLinksFromMarkdown("extracted_links.json")
-CheckExtractedLinksFromMarkdown_Milvus.check_extracted_links("extracted_links.json")
+CheckExtractedLinksFromMarkdown_Milvus = CheckExtractedLinksFromMarkdown("..\\reports\\" + "extracted_links.json")
+CheckExtractedLinksFromMarkdown_Milvus.check_extracted_links("..\\reports\\" + "extracted_links.json")
 
 # Generate report summary
-GenerateReportSummary_Milvus = GenerateReportSummary("link_validation_report.html")
-GenerateReportSummary_Milvus.generate_report_summary("link_validation_report.html")
+GenerateReportSummary_Milvus = GenerateReportSummary("..\\reports\\" + "link_validation_report.html")
+GenerateReportSummary_Milvus.generate_report_summary("..\\reports\\" + "link_validation_report.html")

@@ -26,7 +26,10 @@ class GetURLsFromSitemap(object):
         def get_sitemap(url):
 
             try:
-                response = urllib.request.urlopen(url, data=None)
+
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
+                req = urllib.request.Request(url=url, headers=headers)
+                response = urllib.request.urlopen(req, data=None)
                 xml_code = response.read()
                 # print(type(xml_code))
                 # Take URLs with the following format: <xhtml:link rel="alternate" hreflang="en" href="https://www.milvus.io/docs/en/aboutmilvus/overview"/>
@@ -207,17 +210,27 @@ class CheckLinkStatus(object):
                                                link_dict[key] + """</a>""" + """</td></tr>"""
                                 else:
                                     try:
-                                        response = urllib.request.urlopen(str(urlparse(link).scheme + "://" + urlparse(link).netloc + urlparse(link).path), data=None)
+
+                                        headers = {
+                                            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
+
+                                        req = urllib.request.Request(url=str(
+                                            urlparse(link).scheme + "://" + urlparse(link).netloc + urlparse(
+                                                link).path), headers=headers)
+                                        response = urllib.request.urlopen(req, data=None)
                                         html_code = response.read()
                                         soup = BeautifulSoup(html_code.decode("utf-8"), "lxml")
-                                        a_hash = soup.find("a",{"id":str(urlparse(link).fragment)})
-                                        h1_hash = soup.find("h1",{"id":str(urlparse(link).fragment)})
+                                        a_hash = soup.find("a", {"id": str(urlparse(link).fragment)})
+                                        h1_hash = soup.find("h1", {"id": str(urlparse(link).fragment)})
                                         h2_hash = soup.find("h2", {"id": str(urlparse(link).fragment)})
                                         h3_hash = soup.find("h3", {"id": str(urlparse(link).fragment)})
                                         h4_hash = soup.find("h4", {"id": str(urlparse(link).fragment)})
                                         h5_hash = soup.find("h5", {"id": str(urlparse(link).fragment)})
                                         h6_hash = soup.find("h6", {"id": str(urlparse(link).fragment)})
-                                        if (None,None,None,None,None,None,None) != (a_hash,h1_hash,h2_hash,h3_hash,h4_hash,h5_hash,h6_hash):
+                                        div_hash = soup.find("div", {"id": str(urlparse(link).fragment)})
+
+                                        if (None, None, None, None, None, None, None, None) != (
+                                                a_hash, h1_hash, h2_hash, h3_hash, h4_hash, h5_hash, h6_hash, div_hash):
                                             row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + """<a href=\"""" + link + """\">""" + link + """</a>""" + """</td><td>""" + str(
                                                 status_code) + """</td><td>""" + """<a href=\"""" + link_dict[
                                                            key] + """\">""" + \
