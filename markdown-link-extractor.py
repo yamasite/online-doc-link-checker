@@ -215,10 +215,10 @@ class CheckExtractedLinksFromMarkdown(object):
                             linked_md = os.path.join(final_direct,link)
                             # Check if the linked md exists
                             if Path(linked_md).is_file():
-                                row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + link +  """</a>""" + """</td><td>The file link looks good.</td><td>""" + key + """</td></tr>"""
+                                row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + link  + """</td><td>The file link looks good.</td><td>""" + key + """</td></tr>"""
 
                             else:
-                                row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link + """</a>""" + """</td><td>The file link is broken.</td><td>""" + key + """</td></tr>"""
+                                row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link +  """</td><td>The file link is broken.</td><td>""" + key + """</td></tr>"""
 
                         # A relative path to a file in a subdirectory of the current directory.
                         else:
@@ -227,10 +227,10 @@ class CheckExtractedLinksFromMarkdown(object):
                             linked_md = os.path.join(cur_direct, link)
                             # Check if the linked md exists
                             if Path(linked_md).is_file():
-                                row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + link + """</a>""" + """</td><td>The file link looks good.</td><td>""" + key + """</td></tr>"""
+                                row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + link + """</td><td>The file link looks good.</td><td>""" + key + """</td></tr>"""
 
                             else:
-                                row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link + """</a>""" + """</td><td>The file link is broken.</td><td>""" + key + """</td></tr>"""
+                                row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link  + """</td><td>The file link is broken.</td><td>""" + key + """</td></tr>"""
 
 
                     with open(report_name, "a", encoding="utf-8") as f:
