@@ -267,8 +267,7 @@ class CheckLinkStatus(object):
                         with open(report_name, "a", encoding="utf-8") as f:
                                 f.write(row_code)
                                 # print(row_code)
-
-                            print("""Checked link for """ + link)
+                                print("""Checked link for """ + link)
 
 
                     except requests.exceptions.Timeout as timeout_error:
