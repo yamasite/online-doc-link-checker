@@ -21,9 +21,9 @@ class LinksFromMarkdown(object):
     def extract_links_from_markdown(self, repository):
 
         # repository = "D:\\GithubRepo\\docs-master\\docs-master"
-        link_file = "..\\reports\\" + "extracted_links.json"
+        link_file = "../reports/" + "extracted_links.json"
 
-        dirName = "..\\reports"
+        dirName = "../reports"
 
         try:
             # Create target Directory
@@ -79,7 +79,7 @@ class CheckExtractedLinksFromMarkdown(object):
 
     def check_extracted_links(self, link_file):
 
-        report_name = "..\\reports\\" + "link_validation_report.html"
+        report_name = "../reports/" + "link_validation_report.html"
         html_code = """<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link Validation Detailed Report</title></head><body><h1>Link Validation Detailed Report</h1>"""
 
         with open(link_file, "r", encoding="utf-8") as f:
@@ -247,6 +247,12 @@ class CheckExtractedLinksFromMarkdown(object):
                                 row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link +  """</td><td>The file link is broken.</td><td>""" + key + """</td></tr>"""
 
                         # A relative path to a file in a subdirectory of the current directory.
+
+                        elif link.startswith("\\") or link.startswith("/"):
+                            #Paths may start with "\"
+                            row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link +  """</td><td>The file link is illegal. Do not start a relative path with slashes in markdown.</td><td>""" + key + """</td></tr>"""
+                            
+                        
                         else:
                             # Get the absolute location of the linked md
                             cur_direct = os.path.dirname(key)
@@ -269,6 +275,16 @@ class CheckExtractedLinksFromMarkdown(object):
                                 row_code = """<tr class="success" bgcolor="#32CD32"><td>""" + link + """</td><td>The anchor link looks good.</td><td>""" + key + """</td></tr>"""
                             else:
                                 row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link + """</td><td>The anchor link is broken.</td><td>""" + key + """</td></tr>"""
+                    elif link.startswith("\\") or link.startswith("/"):
+                        # Absolute relative path. Should be avoided.
+                        row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link +  """</td><td>The file link is illegal. Do not start a relative path with slashes in markdown.</td><td>""" + key + """</td></tr>"""
+
+                    else:
+                        # Report as illegal
+                        row_code = """<tr class="fail" bgcolor="#FF0000"><td>""" + link +  """</td><td>The file link might be illegal. Please double check.</td><td>""" + key + """</td></tr>"""
+                        
+
+                    
                     # Writes row_code for the link to the table
                     with open(report_name, "a", encoding="utf-8") as f:
                         f.write(row_code)
@@ -289,7 +305,7 @@ class GenerateReportSummary(object):
 
     def generate_report_summary(self, report_name):
 
-        summary_name = "..\\reports\\" + "link_validation_summary.html"
+        summary_name = "../reports/" + "link_validation_summary.html"
 
         # Use BeautifulSoup to read this report and return statistics
         with open(report_name, "r", encoding="utf-8") as f:
@@ -352,13 +368,13 @@ class GenerateReportSummary(object):
 
             
 # Get link JSON file
-LinksFromMarkdown_Milvus = LinksFromMarkdown("D:\\GithubRepo\\bootcamp")
-LinksFromMarkdown_Milvus.extract_links_from_markdown("D:\\GithubRepo\\bootcamp")
+LinksFromMarkdown_Milvus = LinksFromMarkdown("/Users/zilliz/Documents/GitHub/docs/bootcamp")
+LinksFromMarkdown_Milvus.extract_links_from_markdown("/Users/zilliz/Documents/GitHub/docs/bootcamp")
 
 # Generate link validation report
-CheckExtractedLinksFromMarkdown_Milvus = CheckExtractedLinksFromMarkdown("..\\reports\\" + "extracted_links.json")
-CheckExtractedLinksFromMarkdown_Milvus.check_extracted_links("..\\reports\\" + "extracted_links.json")
+CheckExtractedLinksFromMarkdown_Milvus = CheckExtractedLinksFromMarkdown("../reports/" + "extracted_links.json")
+CheckExtractedLinksFromMarkdown_Milvus.check_extracted_links("../reports/" + "extracted_links.json")
 
 # Generate report summary
-GenerateReportSummary_Milvus = GenerateReportSummary("..\\reports\\" + "link_validation_report.html")
-GenerateReportSummary_Milvus.generate_report_summary("..\\reports\\" + "link_validation_report.html")
+GenerateReportSummary_Milvus = GenerateReportSummary("../reports/" + "link_validation_report.html")
+GenerateReportSummary_Milvus.generate_report_summary("../reports/" + "link_validation_report.html")

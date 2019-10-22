@@ -10,6 +10,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import json
+import ssl
 from urllib.parse import urljoin
 from urllib.parse import urlparse
 
@@ -29,7 +30,8 @@ class GetURLsFromSitemap(object):
 
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
                 req = urllib.request.Request(url=url, headers=headers)
-                response = urllib.request.urlopen(req, data=None)
+                ssl._create_default_https_context = ssl._create_unverified_context
+                response = urllib.request.urlopen(req)
                 xml_code = response.read()
                 # print(type(xml_code))
                 # Take URLs with the following format: <xhtml:link rel="alternate" hreflang="en" href="https://www.milvus.io/docs/en/aboutmilvus/overview"/>
@@ -267,8 +269,7 @@ class CheckLinkStatus(object):
                         with open(report_name, "a", encoding="utf-8") as f:
                                 f.write(row_code)
                                 # print(row_code)
-
-                            print("""Checked link for """ + link)
+                                print("""Checked link for """ + link)
 
 
                     except requests.exceptions.Timeout as timeout_error:
